@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Publish
+
+# release-please tags the commit and creates the GitHub Release; this is the
+# step that turns that tag into an npm version. Splitting the two keeps a failed
+# publish from leaving a half-finished release-please run behind.
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  # Required for npm Trusted Publishing (OIDC) and for the provenance
+  # attestation. No NPM_TOKEN is stored anywhere; npm verifies this workflow
+  # against the trusted publisher configured on the package itself.
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs npm >= 11.5.1; the version bundled with the
+      # runner's Node lags behind it.
+      - name: Use an npm that speaks OIDC
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The same gate CI runs on a PR. A tag is reachable without one — a direct
+      # push to main, a hand-cut release — and an unpublish is not a real undo.
+      - name: Verify
+        run: pnpm check
+
+      # prepublishOnly runs pnpm build, so dist/ is produced from this checkout
+      # rather than trusted from anywhere else.
+      - name: Publish
+        run: npm publish --provenance --access public
