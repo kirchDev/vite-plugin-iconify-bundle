@@ -63,6 +63,14 @@ export function collectIconNames(
   code: string,
   collections: readonly string[] = DEFAULT_COLLECTIONS
 ): Map<string, Set<string>> {
+  // An empty list allows no collection, so nothing can be used. Falling
+  // through would build the pattern with an empty alternation, which matches
+  // the empty string — `':house'` would then be collected under the prefix
+  // `''` and sent to `@iconify-json//icons.json`.
+  if (collections.length === 0) {
+    return new Map();
+  }
+
   const pattern = new RegExp(
     `['"\`](${collections.map(escapeRegExp).join('|')}):([a-z0-9]+(?:-[a-z0-9]+)*)['"\`]`,
     'g'

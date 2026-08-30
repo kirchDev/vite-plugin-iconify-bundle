@@ -129,6 +129,16 @@ describe('collectIconNames', () => {
    * calls would carry its `lastIndex` from one file into the next and drop the
    * icons of every file after the first.
    */
+  /**
+   * An empty list allows no collection, so nothing can be used. Without a
+   * guard the pattern is built with an empty alternation, which matches the
+   * empty string: `':house'` is then collected under the prefix `''`.
+   */
+  it('collects nothing when no collection is allowed', () => {
+    expect(collected(collectIconNames(`':house'`, []))).toEqual([]);
+    expect(collected(collectIconNames(`'lucide:house'`, []))).toEqual([]);
+  });
+
   it('starts each scan at the beginning of the text', () => {
     const code = `'lucide:house'`;
 
