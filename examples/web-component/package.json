@@ -9,8 +9,8 @@
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.126",
-    "iconify-icon": "^3.0.0",
-    "vite-plugin-iconify-bundle": "workspace:*"
+    "@kirchdev/vite-plugin-iconify-bundle": "workspace:*",
+    "iconify-icon": "^3.0.0"
   },
   "devDependencies": {
     "vite": "^7.3.6"

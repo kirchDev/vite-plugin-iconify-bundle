@@ -1,5 +1,5 @@
 import vue from '@vitejs/plugin-vue';
-import { iconifyBundlePlugin } from 'vite-plugin-iconify-bundle';
+import { iconifyBundlePlugin } from '@kirchdev/vite-plugin-iconify-bundle';
 import { defineConfig } from 'vite';
 
 export default defineConfig({

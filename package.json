@@ -1,6 +1,6 @@
 {
   "$schema": "https://www.schemastore.org/package.json",
-  "name": "vite-plugin-iconify-bundle",
+  "name": "@kirchdev/vite-plugin-iconify-bundle",
   "version": "0.1.0",
   "description": "Vite plugin that bundles only the Iconify icons your source actually uses — no runtime API calls, no whole collections.",
   "keywords": [
@@ -42,7 +42,8 @@
     "./package.json": "./package.json"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "build": "tsdown",

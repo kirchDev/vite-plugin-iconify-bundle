@@ -11,7 +11,7 @@
     "@iconify-json/lucide": "^1.2.126",
     "@iconify-json/simple-icons": "^1.2.92",
     "@iconify/vue": "^5.0.1",
-    "vite-plugin-iconify-bundle": "workspace:*",
+    "@kirchdev/vite-plugin-iconify-bundle": "workspace:*",
     "vue": "^3.5.0"
   },
   "devDependencies": {

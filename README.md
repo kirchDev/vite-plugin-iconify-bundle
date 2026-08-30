@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🧩 vite-plugin-iconify-bundle
+# 🧩 @kirchdev/vite-plugin-iconify-bundle
 
 **Only the Iconify icons your source actually uses — resolved at build time, inlined into the bundle, no runtime API**
 
@@ -38,12 +38,12 @@ What this plugin gives up for the scan: names assembled at runtime, custom SVG, 
 Install one `@iconify-json/<prefix>` package per collection you want scanned; the plugin reads their data from disk at build time.
 
 ```bash
-pnpm add -D vite-plugin-iconify-bundle @iconify-json/lucide
+pnpm add -D @kirchdev/vite-plugin-iconify-bundle @iconify-json/lucide
 ```
 
 ```ts
 // vite.config.ts
-import { iconifyBundlePlugin } from 'vite-plugin-iconify-bundle';
+import { iconifyBundlePlugin } from '@kirchdev/vite-plugin-iconify-bundle';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -88,7 +88,7 @@ The icon data is framework-neutral, so `runtime` covers React, Svelte and the we
 The virtual module has no file on disk, so TypeScript rejects a side-effect import of it with `TS2882` unless an **ambient** declaration is in scope. The package ships one — reference it from your `tsconfig.json` `types`, or from a `.d.ts` of your own:
 
 ```ts
-/// <reference types="vite-plugin-iconify-bundle/client" />
+/// <reference types="@kirchdev/vite-plugin-iconify-bundle/client" />
 ```
 
 ## 🤝 Contributing
