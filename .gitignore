@@ -4,3 +4,6 @@ node_modules
 .vscode/*
 !.vscode/extensions.json
 .claude/settings.local.json
+
+# Build output
+dist

@@ -24,3 +24,8 @@ strictPeerDependencies: false
 
 # Use pnpm's isolated node_modules linker layout.
 nodeLinker: isolated
+
+# esbuild ships its platform binary via a postinstall script; vite and vitest
+# both pull it in transitively and neither runs without it.
+allowBuilds:
+  esbuild: true

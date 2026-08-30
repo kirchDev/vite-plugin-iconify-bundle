@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true
+  },
+  "include": ["src", "client.d.ts", "tsdown.config.ts", "vitest.config.ts"]
+}
