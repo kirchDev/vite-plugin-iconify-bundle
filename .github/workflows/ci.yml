@@ -47,11 +47,11 @@ jobs:
       - name: Test
         run: pnpm test
 
-      # Builds the plugin first, then the example against it. The example is a
-      # workspace package linked to this repo, so this is the only step that
+      # Builds the plugin first, then every example against it. The examples are
+      # workspace packages linked to this repo, so this is the only step that
       # proves a consumer still compiles.
-      - name: Build & example
-        run: pnpm example:build
+      - name: Build & examples
+        run: pnpm examples:build
 
       - name: Agent policy parity
         run: pnpm check:policy

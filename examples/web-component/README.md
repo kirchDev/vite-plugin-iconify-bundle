@@ -5,7 +5,7 @@ rendered by `<iconify-icon>`.
 
 ```bash
 pnpm install          # from the repo root
-pnpm example:build    # or: pnpm --filter @example/web-component dev
+pnpm examples:build   # or: pnpm --filter @example/web-component dev
 ```
 
 What it demonstrates:
