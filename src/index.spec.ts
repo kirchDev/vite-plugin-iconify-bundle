@@ -205,6 +205,42 @@ describe('iconifyBundlePlugin', () => {
     load({ sourceDir, collections: ['lucide'] });
 
   /**
+   * A minimal `@iconify-json/<prefix>` package inside `root`'s own
+   * `node_modules`, holding icon names no real collection has.
+   *
+   * The plugin resolves collections from the configured root, so proving that
+   * needs a collection reachable *only* from there. Leaning on this repo's
+   * installed copy instead makes the outcome depend on how the test runner
+   * resolves modules rather than on the plugin: it passed locally, where the
+   * runner reaches the repo's copy whatever the require is anchored to, and
+   * failed in CI, where plain resolution from a temp directory finds nothing.
+   */
+  async function plantCollection(
+    root: string,
+    prefix: string,
+    names: string[]
+  ): Promise<void> {
+    const pkg = path.join(root, 'node_modules', '@iconify-json', prefix);
+    await fs.mkdir(pkg, { recursive: true });
+    await fs.writeFile(
+      path.join(pkg, 'package.json'),
+      JSON.stringify({ name: `@iconify-json/${prefix}`, version: '0.0.0' })
+    );
+    await fs.writeFile(
+      path.join(pkg, 'icons.json'),
+      JSON.stringify({
+        prefix,
+        icons: Object.fromEntries(
+          names.map((name) => [
+            name,
+            { body: '<path d="M0 0"/>', width: 24, height: 24 }
+          ])
+        )
+      })
+    );
+  }
+
+  /**
    * The emitted subsets, parsed rather than string-matched. `toContain` can
    * only ever prove one icon is absent; the bundle's whole claim is that
    * nothing else is present, and that is a statement about the key set.
@@ -298,18 +334,27 @@ describe('iconifyBundlePlugin', () => {
   });
 
   /**
-   * The option is documented as resolving against Vite's root rather than the
-   * working directory, and every other test here passes an absolute path — so
-   * this is the only one that would notice the two being swapped.
+   * Both halves of what the root means, in one hermetic case.
+   *
+   * `sourceDir` is relative, so nothing is found unless it resolves against
+   * the root rather than the working directory — every other test here passes
+   * an absolute path and would not notice the two being swapped. And the icon
+   * exists only in the collection planted under that same root, so it reaches
+   * the bundle only if collections resolve from the root too, rather than
+   * from wherever this package happens to be installed.
    */
-  it('resolves a relative sourceDir against the root', async () => {
+  it('resolves a relative sourceDir and the collections against the root', async () => {
     const nested = path.join(dir, 'src');
     await fs.mkdir(nested);
-    await fs.writeFile(path.join(nested, 'a.ts'), `const i = 'lucide:house';`);
+    await fs.writeFile(
+      path.join(nested, 'a.ts'),
+      `const i = 'lucide:hermetic-house';`
+    );
+    await plantCollection(dir, 'lucide', ['hermetic-house']);
 
     const code = await load({ sourceDir: 'src', collections: ['lucide'] }, dir);
 
-    expect(code).toContain('"house"');
+    expect(registered(code)).toEqual({ lucide: ['hermetic-house'] });
   });
 
   /**
