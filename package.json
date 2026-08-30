@@ -1,55 +1,96 @@
 {
   "$schema": "https://www.schemastore.org/package.json",
-  "name": "scaffold",
-  "version": "0.3.0",
-  "description": "Language-agnostic baseline template for new kirchDev repositories.",
+  "name": "vite-plugin-iconify-bundle",
+  "version": "0.0.0",
+  "description": "Vite plugin that bundles only the Iconify icons your source actually uses — no runtime API calls, no whole collections.",
   "keywords": [
-    "commitlint",
-    "conventional-commits",
-    "dependabot",
-    "github-template",
-    "husky",
+    "bundle",
+    "iconify",
+    "icons",
     "kirchdev",
-    "nodejs",
-    "oxfmt",
-    "oxlint",
-    "pnpm",
-    "release-please",
-    "scaffold",
-    "template"
+    "ssr",
+    "tree-shaking",
+    "virtual-module",
+    "vite",
+    "vite-plugin"
   ],
-  "homepage": "https://github.com/TitusKirch/scaffold#readme",
+  "homepage": "https://github.com/kirchDev/vite-plugin-iconify-bundle#readme",
   "bugs": {
-    "url": "https://github.com/TitusKirch/scaffold/issues"
+    "url": "https://github.com/kirchDev/vite-plugin-iconify-bundle/issues"
   },
   "license": "MIT",
   "author": "Titus Kirch <titus.kirch@kirch.dev>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TitusKirch/scaffold.git"
+    "url": "git+https://github.com/kirchDev/vite-plugin-iconify-bundle.git"
   },
+  "files": [
+    "client.d.ts",
+    "dist"
+  ],
   "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./client": {
+      "types": "./client.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "examples:build": "pnpm build && pnpm -r --filter \"./examples/*\" build",
+    "typecheck": "tsc --noEmit",
     "lint": "oxlint . --deny-warnings",
     "lint:fix": "oxlint . --fix --deny-warnings",
     "format": "oxfmt --check .",
     "format:fix": "oxfmt .",
-    "check": "pnpm lint && pnpm format && pnpm check:policy",
+    "check": "pnpm lint && pnpm format && pnpm typecheck && pnpm test && pnpm check:policy",
     "check:fix": "pnpm lint:fix && pnpm format:fix",
     "check:policy": "node scripts/check-policy-parity.js",
     "skills:update": "pnpm dlx skills@latest update -p -y",
     "taze": "taze",
     "taze:w": "taze -w",
-    "prepare": "husky"
+    "prepare": "husky",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "@iconify/types": "^2.0.0",
+    "@iconify/utils": "^3.1.4"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
+    "@iconify-json/lucide": "^1.2.126",
+    "@iconify-json/simple-icons": "^1.2.93",
+    "@types/node": "^26.3.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
     "oxfmt": "0.61.0",
     "oxlint": "1.76.0",
-    "taze": "^19.16.0"
+    "taze": "^19.16.0",
+    "tsdown": "^0.22.14",
+    "typescript": "^7.0.2",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.11"
+  },
+  "peerDependencies": {
+    "@iconify/vue": "*",
+    "vite": "^5.0.0 || ^6.0.0 || ^7.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@iconify/vue": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=24"

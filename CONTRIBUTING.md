@@ -1,4 +1,4 @@
-# Contributing to scaffold
+# Contributing to vite-plugin-iconify-bundle
 
 Thanks for taking the time to contribute! 🛠️ This document covers what you need to get a PR landed.
 
@@ -9,8 +9,8 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 ## Reporting issues
 
 - **Questions & ideas, or something that might be a bug**: start in the [Discord forum](https://discord.kirch.dev/) — that's where the low-friction, unconfirmed stuff lives.
-- **Confirmed bugs**: open a [Bug report](https://github.com/TitusKirch/scaffold/issues/new?template=bug_report.yml) with a minimal reproduction if at all possible.
-- **Feature requests**: open a [Feature request](https://github.com/TitusKirch/scaffold/issues/new?template=feature_request.yml).
+- **Confirmed bugs**: open a [Bug report](https://github.com/kirchDev/vite-plugin-iconify-bundle/issues/new?template=bug_report.yml) with a minimal reproduction if at all possible.
+- **Feature requests**: open a [Feature request](https://github.com/kirchDev/vite-plugin-iconify-bundle/issues/new?template=feature_request.yml).
 - **Security vulnerabilities**: **do not** open a public issue. Follow [SECURITY.md](SECURITY.md).
 
 ## Development setup
@@ -23,8 +23,8 @@ Requirements:
 Clone and install:
 
 ```bash
-git clone https://github.com/TitusKirch/scaffold.git
-cd scaffold
+git clone https://github.com/kirchDev/vite-plugin-iconify-bundle.git
+cd vite-plugin-iconify-bundle
 pnpm install   # wires husky hooks
 ```
 
@@ -34,18 +34,20 @@ pnpm install   # wires husky hooks
 | :--------------- | :---------------------------------------- |
 | `pnpm lint`      | oxlint across the repo.                   |
 | `pnpm format`    | oxfmt check across JS / JSON / YAML / MD. |
-| `pnpm check`     | Runs `lint` and `format`.                 |
+| `pnpm typecheck` | `tsc --noEmit`.                           |
+| `pnpm test`      | The Vitest suite.                         |
+| `pnpm check`     | All of the above plus `check:policy`.     |
 | `pnpm check:fix` | Auto-fix lint + format issues.            |
 
 The same commands run in CI — keep them green before you push.
 
 ## Branching & PRs
 
-1. **Don't push directly to `main`.** Branch off `main` for every change.
+1. **Don't push directly to `main` or `dev`.** Branch off `dev` and open the PR against `dev`; `dev` is rolled up into `main`, and release-please releases from there.
 2. **Conventional Commits required.** Commitlint enforces this on every commit. Examples:
-   - `feat: add new GitHub workflow`
-   - `fix(ci): correct pnpm cache key`
-   - `docs(readme): clarify template usage steps`
+   - `feat: expose the scanned file extensions as an option`
+   - `fix(scan): keep a regex metacharacter in a prefix literal`
+   - `docs(readme): document the ambient type declaration`
    - `chore(deps): bump oxlint to 1.67`
    - Breaking changes: `feat!: ...` or include `BREAKING CHANGE:` in the body.
 3. **One concern per PR.** Smaller PRs land faster.

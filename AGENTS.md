@@ -16,9 +16,16 @@ Retyping a change is exactly how the two drift; one reflowed line or reworded cl
 
 ## What this repo is
 
-`scaffold` is a **GitHub template repository**, not an application. It ships the meta layer (lint, format, commit hooks, CI, CodeQL, Dependabot, release-please, issue/PR templates, standard meta docs) that every new kirchDev repo should start with. There is no application code — the project code can be anything (PHP, Go, Rust, Vue, shell). Only the meta layer lives here.
+`vite-plugin-iconify-bundle` is a **published Vite plugin**: it scans a source directory for quoted `prefix:name` icon literals, resolves each one against the locally installed `@iconify-json/*` data at build time, and serves them through the virtual module `virtual:iconify-bundle`, which registers them via `addCollection`. The bundle then carries exactly the icons the source names — offline, deterministic, inline under SSR, no runtime Iconify API call.
 
-Implication: when changing files, ask "does this default make sense for _every_ future repo created from this template?" — not just for one project type.
+The plugin was **extracted from a working application, not designed here**. Its behaviour was the specification for this repo, which means a change to it is a change to something that already had users — not a greenfield decision.
+
+Two behaviours are deliberate and must survive the move:
+
+- **The scan is a plain text search over all three string delimiters, not a parse** — so it reads icon names out of comments too. `docs/99.adr/0001-*` records the trade: a name written into prose sends the build looking for an icon that does not exist, and that loud failure is preferred to a silently missing icon.
+- **An unknown icon name fails the build.** The scan is the definition of *used*, and the build turns on it. `collectIconNames` is therefore exported and tested rather than left as a closure inside the factory — keep that seam.
+
+Read `docs/99.adr/` before changing either. Both look like defects until the reasoning is in front of you, and both have been proposed as bugs before.
 
 ## Commands
 
@@ -27,7 +34,11 @@ Implication: when changing files, ask "does this default make sense for _every_ 
 | `pnpm install`      | Install deps and wire husky hooks via the `prepare` script |
 | `pnpm lint`         | `oxlint . --deny-warnings`                                 |
 | `pnpm format`       | `oxfmt --check .` (note: `format` is the check, not fix)   |
-| `pnpm check`        | Runs `lint` + `format` + `check:policy` — the CI gate       |
+| `pnpm build`        | `tsdown` — bundles `src/` into `dist/`                      |
+| `pnpm test`         | `vitest run`                                               |
+| `pnpm examples:build`| Build the plugin, then every example against it           |
+| `pnpm typecheck`    | `tsc --noEmit`                                             |
+| `pnpm check`        | `lint` + `format` + `typecheck` + `test` + `check:policy`   |
 | `pnpm check:policy` | Proves the two agent policy files ban the same commands    |
 | `pnpm lint:fix`     | Auto-fix lint                                              |
 | `pnpm format:fix`   | Auto-fix format                                            |
@@ -36,15 +47,17 @@ Implication: when changing files, ask "does this default make sense for _every_ 
 | `pnpm taze`         | Interactive dependency upgrade check                       |
 | `pnpm taze:w`       | Write upgrade results                                      |
 
-There is no test suite — this is config-only. CI runs `pnpm lint`, `pnpm format` and `pnpm check:policy` on PR.
+CI runs the same five steps as `pnpm check`, plus `pnpm examples:build`, on PR.
 
 ## Architecture / conventions
 
 - **Node 24, pnpm 11.** Pinned via `.nvmrc`, `engines`, and `packageManager`. `pnpm-workspace.yaml` enforces `minimumReleaseAge=4320` (3-day cooldown), isolated node-linker. Don't loosen these without reason.
+- **`examples/*` are private workspace packages** consuming the root via `workspace:*`. That link is the point: an example pinned to a published version keeps building after a change here breaks it. They are not in the root `tsconfig.json` — an example imports the built `dist/`, so adding it would make `typecheck` depend on `build`. `examples:build` is the check that covers them, and it builds the plugin first for the same reason. The two are deliberately different: `vue` exercises the default runtime and `.vue` scanning, `web-component` a non-default runtime and no framework. A third earns its place only by covering a path neither does.
+- **`src/index.ts` is the whole plugin**, `src/index.spec.ts` the whole suite. `client.d.ts` sits at the package root because a consumer reaches it as `vite-plugin-iconify-bundle/client`, mirroring `vite/client`. Built with `tsdown` to ESM only (`dist/index.mjs`); `dist/` is gitignored and rebuilt by `prepublishOnly`.
 - **oxc, not eslint/prettier.** Linting via `oxlint`, formatting via `oxfmt`. Configs live in `.oxlintrc.json` / `.oxfmtrc.json`. `oxlint` uses `unicorn` + `oxc` plugins; rules deliberately minimal.
 - **Husky hooks** (`.husky/pre-commit`, `.husky/commit-msg`) run `lint-staged` and `commitlint`. `lint-staged.config.js` excludes `README.md`, `CLAUDE.md`, and `AGENTS.md` (free-form prose) and `pnpm-lock.yaml`. `oxlint --fix --deny-warnings` then `oxfmt` on JS; `oxfmt` only on JSON/YAML/MD.
 - **Conventional Commits enforced** via `@commitlint/config-conventional`. Don't `--no-verify` unless explicitly asked.
-- **release-please is included** (unlike many templates that omit it). Files: `release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release-please.yml`. Config uses `release-type: simple` (language-agnostic), `include-v-in-tag: true`. Downstream repos start at `0.0.0` and reset via the steps in README → _Resetting release-please_.
+- **release-please owns the version.** Files: `release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release-please.yml`. Config uses `release-type: node`, so the release PR bumps `package.json` itself — never edit `version` by hand. `include-v-in-tag: true`. The repo starts at `0.0.0` with an empty `CHANGELOG.md`; the first conventional commit on `main` opens the initial release PR.
 - **Workflows** use `actions/checkout@v6`, `actions/setup-node@v6`, `pnpm/action-setup@v6`, `github/codeql-action/{init,analyze}@v4`. Keep these pinned to major versions; Dependabot bumps them monthly.
 - **CodeQL** scans `actions` + `javascript-typescript` with `security-extended,security-and-quality` queries, gated by path filters so non-code changes don't trigger it.
 - **Dependabot** groups all minor/patch updates per ecosystem into a single PR (`npm-minor-patch`, `actions-minor-patch`). Majors come as separate PRs.
@@ -102,26 +115,35 @@ rm .github/workflows/dev-pr.yml
 # .tituskirch-skills.json   — set `pr.base` to "main"
 ```
 
-Nothing is vendored for this. A variant worth shipping as files is one that *adds* something — content that would otherwise be lost, the way `dev-pr.yml` itself would be. A variant that only deletes has nothing to preserve, so it stays documented, exactly like _Public vs private repos_ below.
+Nothing is vendored for this. A variant worth shipping as files is one that *adds* something — content that would otherwise be lost, the way `dev-pr.yml` itself would be. A variant that only deletes has nothing to preserve, so it stays documented.
 
 `ci.yml` and `codeql.yml` list both `main` and `dev` in their `on: branches:` filters and neither edit touches them. A filter naming a branch that doesn't exist is a no-op, so it costs a main-only repo nothing — and without `dev` in `ci.yml`, PRs into `dev` (Dependabot's included) would run no CI at all.
 
-Variants that are *purely* deletions — see _Public vs private repos_ below — stay documented rather than vendored; only this one earns the folder.
+## Visibility
 
-## Public vs private repos
-
-Some meta defaults only make sense for one visibility. When spinning up a repo from this template, adjust for its visibility:
-
-- **CodeQL / code scanning** (`.github/workflows/codeql.yml`) depends on GitHub Advanced Security. It's free on **public** repos; on a **private** repo without a GHAS license it won't run — delete `codeql.yml` (and the CodeQL note above) rather than leave a dead workflow. The same goes for other GHAS-gated features (secret scanning, etc.). Dependabot version updates work on both.
-- **License.** A **public** repo ships MIT: keep `LICENSE` and the `[MIT](LICENSE) © …` README footer. A **private** repo is proprietary: remove/replace `LICENSE`, drop the MIT footer, and set `package.json` to `"license": "UNLICENSED"` (keep `"private": true`).
-- **Discord forum links.** `.github/ISSUE_TEMPLATE/config.yml` points questions, ideas and possible bugs at the repo's Discord forum (each open-source repo gets one, provisioned from the `infrastructure` repo's OpenTofu). Confirmed bugs and features stay as the GitHub issue forms. A **private** repo has no forum — drop the `contact_links` block; if you still want an in-repo Q&A path, restore a simple `question.yml`.
+This repo is **public**, which settles the three defaults that depend on visibility: CodeQL runs (GitHub Advanced Security is free on public repos), the MIT `LICENSE` and its README footer stay, and `.github/ISSUE_TEMPLATE/config.yml` points questions, ideas and possible bugs at the repo's Discord forum while confirmed bugs and features stay as GitHub issue forms.
 
 ## House style for READMEs and meta files
 
 `/write-readme` skill encodes the canonical structure. Key rules: hero block wrapped in `<div align="center">`, prescribed section emojis (✨ Features, 🚀 Setup, 🤝 Contributing, 🛣️ Versioning, 📄 License), license footer always reads `[MIT](LICENSE) © [Titus Kirch](https://github.com/TitusKirch/) / [IT-Dienstleistungen Titus Kirch](https://kirch.dev)`. Use GitHub callouts (`> [!TIP]`, `> [!IMPORTANT]`), never plain blockquotes.
 
-## When editing this template
+## The virtual module id
 
-- Every file referencing `TitusKirch/scaffold` is a placeholder that downstream users will replace. Keep the references consistent so a single `grep -rn "TitusKirch/scaffold"` catches them all.
-- `forgemap` (sibling repo at `../forgemap`) is the de-facto reference implementation of these conventions. When unsure about a config choice, check what forgemap does.
-- The template's own `package.json` is `"private": true` and `"name": "scaffold"` — not published anywhere.
+`virtual:iconify-bundle` is the string a consumer types, and it is **still changeable until the first publish**; after that it is a breaking change for strangers. The recommendation is to keep it: `unplugin-icons` already occupies `~icons/*` and `virtual:icons/*`, so anything generic sits confusingly close to it; the id mirrors the package name (id minus `virtual:` equals package minus `vite-plugin-`); and it survives a later Nuxt wrapper, which would serve the same module rather than invent a second name. That is also why the package is `-bundle` and not `-bundler`. **Do not change it unilaterally — raise it.**
+
+## The ambient type declaration ships with the package
+
+The virtual module has no file on disk, so a consumer's side-effect import fails TypeScript 6 with TS2882 unless `declare module 'virtual:iconify-bundle';` is in scope — and it must be **ambient**, not an augmentation, since an augmentation cannot resolve a module that does not exist. `client.d.ts` carries it; without that file the package compiles for nobody.
+
+The file that carries it must stay free of any top-level `import` or `export` — one of either turns the whole file into a module and the `declare module` into an augmentation, which is the failure this note exists to prevent.
+
+## Scope
+
+**Keep the surface small.** The plugin ships the config it has today — `sourceDir` and `collections` — and this repo is moving and packaging, not redesigning. A new option needs a reason beyond "an app might want it".
+
+A Nuxt wrapper, if it happens, is a **second published package out of this repo** (`nuxt-iconify-bundle`) serving the same virtual module — not a rename of this one.
+
+## When editing this repo
+
+- `forgemap` (sibling repo at `../forgemap`) is the de-facto reference implementation of the meta-layer conventions here. When unsure about a config choice, check what forgemap does.
+- The repo inherits `TitusKirch/scaffold`'s meta layer. When a scaffold default gets fixed upstream, the fix is worth pulling across rather than reinventing.
