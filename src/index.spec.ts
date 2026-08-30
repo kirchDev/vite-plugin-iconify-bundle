@@ -171,21 +171,30 @@ describe('isScannedFile', () => {
 describe('iconifyBundlePlugin', () => {
   const RESOLVED_ID = '\0virtual:iconify-bundle';
 
-  async function loadModule(sourceDir: string): Promise<string> {
-    const plugin = iconifyBundlePlugin({
-      sourceDir,
-      collections: ['lucide']
-    });
+  const warnings: string[] = [];
 
-    const context = { addWatchFile() {}, warn() {} } as any;
-    (plugin.configResolved as any).call(context, { root: process.cwd() });
-
+  async function load(
+    options: Parameters<typeof iconifyBundlePlugin>[0],
+    root: string = process.cwd()
+  ): Promise<string> {
+    const plugin = iconifyBundlePlugin(options);
+    const context = {
+      addWatchFile() {},
+      warn(message: string) {
+        warnings.push(message);
+      }
+    } as any;
+    (plugin.configResolved as any).call(context, { root });
     return (await (plugin.load as any).call(context, RESOLVED_ID)) as string;
   }
+
+  const loadModule = (sourceDir: string): Promise<string> =>
+    load({ sourceDir, collections: ['lucide'] });
 
   let dir: string;
 
   beforeEach(async () => {
+    warnings.length = 0;
     dir = await fs.mkdtemp(path.join(tmpdir(), 'iconify-bundle-'));
   });
 
@@ -220,5 +229,63 @@ describe('iconifyBundlePlugin', () => {
     await fs.writeFile(path.join(nested, 'a.ts'), `const i = 'lucide:house';`);
 
     expect(await loadModule(dir)).not.toContain('"house"');
+  });
+
+  it('imports addCollection from the configured runtime', async () => {
+    await fs.writeFile(path.join(dir, 'a.ts'), `const i = 'lucide:house';`);
+
+    const code = await load({
+      sourceDir: dir,
+      collections: ['lucide'],
+      runtime: 'iconify-icon'
+    });
+
+    expect(code).toContain(`import { addCollection } from "iconify-icon"`);
+    expect(code).not.toContain('@iconify/vue');
+  });
+
+  /**
+   * The scan and the HMR filter share `isScannedFile`, but nothing proved the
+   * directory walk actually consults it — a walk that read every file would
+   * pass every unit test above and still bundle icons out of a .md file.
+   */
+  it('reads only the configured extensions off disk', async () => {
+    await fs.writeFile(path.join(dir, 'a.md'), `see 'lucide:house' here`);
+    await fs.writeFile(path.join(dir, 'b.ts'), `const i = 'lucide:mail';`);
+
+    const code = await loadModule(dir);
+
+    expect(code).not.toContain('"house"');
+    expect(code).toContain('"mail"');
+  });
+
+  /**
+   * The option is documented as resolving against Vite's root rather than the
+   * working directory, and every other test here passes an absolute path — so
+   * this is the only one that would notice the two being swapped.
+   */
+  it('resolves a relative sourceDir against the root', async () => {
+    const nested = path.join(dir, 'src');
+    await fs.mkdir(nested);
+    await fs.writeFile(path.join(nested, 'a.ts'), `const i = 'lucide:house';`);
+
+    const code = await load({ sourceDir: 'src', collections: ['lucide'] }, dir);
+
+    expect(code).toContain('"house"');
+  });
+
+  /**
+   * The one signal for the silent half of the failure model: a `collections`
+   * list that misses the prefix the source writes collects nothing, and
+   * nothing else would report it.
+   */
+  it('warns when the scan finds no icons at all', async () => {
+    await fs.writeFile(path.join(dir, 'a.ts'), `const i = 'mdi:home';`);
+
+    const code = await loadModule(dir);
+
+    expect(code).not.toContain('addCollection(');
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('No icon literals found');
   });
 });
