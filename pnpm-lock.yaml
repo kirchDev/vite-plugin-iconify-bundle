@@ -27,6 +27,9 @@ importers:
       '@iconify-json/lucide':
         specifier: ^1.2.126
         version: 1.2.126
+      '@iconify-json/simple-icons':
+        specifier: ^1.2.93
+        version: 1.2.93
       '@types/node':
         specifier: ^26.3.0
         version: 26.3.0

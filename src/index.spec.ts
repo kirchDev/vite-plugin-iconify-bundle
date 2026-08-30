@@ -204,6 +204,23 @@ describe('iconifyBundlePlugin', () => {
   const loadModule = (sourceDir: string): Promise<string> =>
     load({ sourceDir, collections: ['lucide'] });
 
+  /**
+   * The emitted subsets, parsed rather than string-matched. `toContain` can
+   * only ever prove one icon is absent; the bundle's whole claim is that
+   * nothing else is present, and that is a statement about the key set.
+   */
+  function registered(code: string): Record<string, string[]> {
+    const out: Record<string, string[]> = {};
+    for (const [, json] of code.matchAll(/addCollection\((\{.*?\})\);/g)) {
+      const subset = JSON.parse(json) as {
+        prefix: string;
+        icons: Record<string, unknown>;
+      };
+      out[subset.prefix] = Object.keys(subset.icons).sort();
+    }
+    return out;
+  }
+
   let dir: string;
 
   beforeEach(async () => {
@@ -216,14 +233,21 @@ describe('iconifyBundlePlugin', () => {
     await fs.rm(dir, { recursive: true, force: true });
   });
 
-  it('emits only the icons the source names', async () => {
-    await fs.writeFile(path.join(dir, 'a.ts'), `const i = 'lucide:house';`);
+  /**
+   * The exact key set, not a sample. The collection on disk holds well over a
+   * thousand icons, so asserting that one specific other icon is absent would
+   * pass just as happily if the plugin embedded all of them but one.
+   */
+  it('emits the icons the source names and no others', async () => {
+    await fs.writeFile(
+      path.join(dir, 'a.ts'),
+      `['lucide:house', 'lucide:mail']`
+    );
 
     const code = await loadModule(dir);
 
     expect(code).toContain(`import { addCollection } from "@iconify/vue"`);
-    expect(code).toContain('"house"');
-    expect(code).not.toContain('"mail"');
+    expect(registered(code)).toEqual({ lucide: ['house', 'mail'] });
   });
 
   it('fails the build on a name the collection does not have', async () => {
@@ -338,10 +362,10 @@ describe('iconifyBundlePlugin', () => {
     expect(order).toEqual(['bell', 'house', 'mail']);
   });
 
-  it('emits one registration per collection', async () => {
+  it('emits one registration per collection, each holding only its own', async () => {
     await fs.writeFile(
       path.join(dir, 'a.ts'),
-      `['lucide:house', 'simple-icons:vuedotjs']`
+      `['lucide:house', 'simple-icons:vuedotjs', 'lucide:mail']`
     );
 
     const code = await load({
@@ -349,9 +373,45 @@ describe('iconifyBundlePlugin', () => {
       collections: ['lucide', 'simple-icons']
     });
 
-    expect(code.match(/addCollection\(/g)).toHaveLength(2);
-    expect(code).toContain('"prefix":"lucide"');
-    expect(code).toContain('"prefix":"simple-icons"');
+    expect(registered(code)).toEqual({
+      lucide: ['house', 'mail'],
+      'simple-icons': ['vuedotjs']
+    });
+  });
+
+  /**
+   * Dozens of names exist in both collections. Grouping by prefix is what
+   * keeps them apart, and a bug that merged the groups would still produce a
+   * plausible-looking bundle — with one collection's artwork under the other
+   * collection's name.
+   */
+  it('keeps a name that exists in both collections under each prefix', async () => {
+    await fs.writeFile(
+      path.join(dir, 'a.ts'),
+      `['lucide:anchor', 'simple-icons:anchor']`
+    );
+
+    const code = await load({
+      sourceDir: dir,
+      collections: ['lucide', 'simple-icons']
+    });
+    const subsets = registered(code);
+
+    expect(subsets).toEqual({ lucide: ['anchor'], 'simple-icons': ['anchor'] });
+
+    const [lucide, simple] = [...code.matchAll(/addCollection\((\{.*?\})\);/g)];
+    expect(lucide[1]).not.toEqual(simple[1]);
+  });
+
+  it('reports an unknown name against the collection it was written for', async () => {
+    await fs.writeFile(
+      path.join(dir, 'a.ts'),
+      `['lucide:house', 'simple-icons:not-a-real-brand']`
+    );
+
+    await expect(
+      load({ sourceDir: dir, collections: ['lucide', 'simple-icons'] })
+    ).rejects.toThrow('simple-icons:not-a-real-brand');
   });
 
   /**
