@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   lint:
-    name: Lint & Format
+    name: Check
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     steps:
@@ -40,6 +40,18 @@ jobs:
 
       - name: Format check
         run: pnpm format
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      # Builds the plugin first, then the example against it. The example is a
+      # workspace package linked to this repo, so this is the only step that
+      # proves a consumer still compiles.
+      - name: Build & example
+        run: pnpm example:build
 
       - name: Agent policy parity
         run: pnpm check:policy
