@@ -18,14 +18,14 @@ Retyping a change is exactly how the two drift; one reflowed line or reworded cl
 
 `vite-plugin-iconify-bundle` is a **published Vite plugin**: it scans a source directory for quoted `prefix:name` icon literals, resolves each one against the locally installed `@iconify-json/*` data at build time, and serves them through the virtual module `virtual:iconify-bundle`, which registers them via `addCollection`. The bundle then carries exactly the icons the source names — offline, deterministic, inline under SSR, no runtime Iconify API call.
 
-It is an **extraction, not a new design**. The code already works in `kirchDev/app` (`vite/plugins/iconify-bundle.ts`) and is being lifted out so the next project takes a dependency instead of copy-pasting a second, drifting source of truth. That file's behaviour is the specification; `onboard.md` is the build brief and gets deleted once the repo stands on its own.
+The plugin was **extracted from a working application, not designed here**. Its behaviour was the specification for this repo, which means a change to it is a change to something that already had users — not a greenfield decision.
 
 Two behaviours are deliberate and must survive the move:
 
-- **The scan is a plain text search over all three string delimiters, not a parse** — so it reads icon names out of comments too. `kirchDev/app`'s ADR-0001 records the trade: a name written into prose sends the build looking for an icon that does not exist, and that loud failure is preferred to a silently missing icon.
+- **The scan is a plain text search over all three string delimiters, not a parse** — so it reads icon names out of comments too. `docs/99.adr/0001-*` records the trade: a name written into prose sends the build looking for an icon that does not exist, and that loud failure is preferred to a silently missing icon.
 - **An unknown icon name fails the build.** The scan is the definition of *used*, and the build turns on it. `collectIconNames` is therefore exported and tested rather than left as a closure inside the factory — keep that seam.
 
-`kirchDev/app` is the first consumer and the dogfood step: pointing it at the published package and deleting its local copy is the proof the extraction is complete.
+Read `docs/99.adr/` before changing either. Both look like defects until the reasoning is in front of you, and both have been proposed as bugs before.
 
 ## Commands
 
@@ -36,8 +36,7 @@ Two behaviours are deliberate and must survive the move:
 | `pnpm format`       | `oxfmt --check .` (note: `format` is the check, not fix)   |
 | `pnpm build`        | `tsdown` — bundles `src/` into `dist/`                      |
 | `pnpm test`         | `vitest run`                                               |
-| `pnpm example:build`| Build the plugin, then the example against it              |
-| `pnpm example:dev`  | Vite dev server for the example                            |
+| `pnpm examples:build`| Build the plugin, then every example against it           |
 | `pnpm typecheck`    | `tsc --noEmit`                                             |
 | `pnpm check`        | `lint` + `format` + `typecheck` + `test` + `check:policy`   |
 | `pnpm check:policy` | Proves the two agent policy files ban the same commands    |
@@ -48,12 +47,12 @@ Two behaviours are deliberate and must survive the move:
 | `pnpm taze`         | Interactive dependency upgrade check                       |
 | `pnpm taze:w`       | Write upgrade results                                      |
 
-CI runs the same five steps as `pnpm check`, plus `pnpm example:build`, on PR.
+CI runs the same five steps as `pnpm check`, plus `pnpm examples:build`, on PR.
 
 ## Architecture / conventions
 
 - **Node 24, pnpm 11.** Pinned via `.nvmrc`, `engines`, and `packageManager`. `pnpm-workspace.yaml` enforces `minimumReleaseAge=4320` (3-day cooldown), isolated node-linker. Don't loosen these without reason.
-- **`examples/*` are private workspace packages** consuming the root via `workspace:*`. That link is the point: an example pinned to a published version keeps building after a change here breaks it. They are not in the root `tsconfig.json` — an example imports the built `dist/`, so adding it would make `typecheck` depend on `build`. `example:build` is the check that covers them, and it builds the plugin first for the same reason.
+- **`examples/*` are private workspace packages** consuming the root via `workspace:*`. That link is the point: an example pinned to a published version keeps building after a change here breaks it. They are not in the root `tsconfig.json` — an example imports the built `dist/`, so adding it would make `typecheck` depend on `build`. `examples:build` is the check that covers them, and it builds the plugin first for the same reason. The two are deliberately different: `vue` exercises the default runtime and `.vue` scanning, `web-component` a non-default runtime and no framework. A third earns its place only by covering a path neither does.
 - **`src/index.ts` is the whole plugin**, `src/index.spec.ts` the whole suite. `client.d.ts` sits at the package root because a consumer reaches it as `vite-plugin-iconify-bundle/client`, mirroring `vite/client`. Built with `tsdown` to ESM only (`dist/index.mjs`); `dist/` is gitignored and rebuilt by `prepublishOnly`.
 - **oxc, not eslint/prettier.** Linting via `oxlint`, formatting via `oxfmt`. Configs live in `.oxlintrc.json` / `.oxfmtrc.json`. `oxlint` uses `unicorn` + `oxc` plugins; rules deliberately minimal.
 - **Husky hooks** (`.husky/pre-commit`, `.husky/commit-msg`) run `lint-staged` and `commitlint`. `lint-staged.config.js` excludes `README.md`, `CLAUDE.md`, and `AGENTS.md` (free-form prose) and `pnpm-lock.yaml`. `oxlint --fix --deny-warnings` then `oxfmt` on JS; `oxfmt` only on JSON/YAML/MD.
@@ -130,11 +129,11 @@ This repo is **public**, which settles the three defaults that depend on visibil
 
 ## The virtual module id
 
-`virtual:iconify-bundle` is the string a consumer types, and it is **still changeable until the first publish** — the only consumer today is `kirchDev/app`, which we own, where a rename is one line in `Icon.vue` and one in the ambient declaration. After publishing it is a breaking change for strangers. The recommendation is to keep it: `unplugin-icons` already occupies `~icons/*` and `virtual:icons/*`, so anything generic sits confusingly close to it; the id mirrors the package name (id minus `virtual:` equals package minus `vite-plugin-`); and it survives a later Nuxt wrapper, which would serve the same module rather than invent a second name. That is also why the package is `-bundle` and not `-bundler`. **Do not change it unilaterally — raise it.**
+`virtual:iconify-bundle` is the string a consumer types, and it is **still changeable until the first publish**; after that it is a breaking change for strangers. The recommendation is to keep it: `unplugin-icons` already occupies `~icons/*` and `virtual:icons/*`, so anything generic sits confusingly close to it; the id mirrors the package name (id minus `virtual:` equals package minus `vite-plugin-`); and it survives a later Nuxt wrapper, which would serve the same module rather than invent a second name. That is also why the package is `-bundle` and not `-bundler`. **Do not change it unilaterally — raise it.**
 
 ## The ambient type declaration ships with the package
 
-The virtual module has no file on disk, so a consumer's side-effect import fails TypeScript 6 with TS2882 unless `declare module 'virtual:iconify-bundle';` is in scope — and it must be **ambient**, not an augmentation, since an augmentation cannot resolve a module that does not exist. The declaration lives in `resources/js/types/virtual-modules.d.ts` in `kirchDev/app` today, with a comment stating exactly that. Moving it here is part of the extraction, not an afterthought: without it the package compiles for nobody.
+The virtual module has no file on disk, so a consumer's side-effect import fails TypeScript 6 with TS2882 unless `declare module 'virtual:iconify-bundle';` is in scope — and it must be **ambient**, not an augmentation, since an augmentation cannot resolve a module that does not exist. `client.d.ts` carries it; without that file the package compiles for nobody.
 
 The file that carries it must stay free of any top-level `import` or `export` — one of either turns the whole file into a module and the `declare module` into an augmentation, which is the failure this note exists to prevent.
 
@@ -146,6 +145,5 @@ A Nuxt wrapper, if it happens, is a **second published package out of this repo*
 
 ## When editing this repo
 
-- `onboard.md` is the build brief. Delete it once the repo stands on its own; until then it is the record of what was settled and what still needs asking.
 - `forgemap` (sibling repo at `../forgemap`) is the de-facto reference implementation of the meta-layer conventions here. When unsure about a config choice, check what forgemap does.
 - The repo inherits `TitusKirch/scaffold`'s meta layer. When a scaffold default gets fixed upstream, the fix is worth pulling across rather than reinventing.

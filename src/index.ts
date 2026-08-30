@@ -26,8 +26,8 @@ export interface IconifyBundleOptions {
   /**
    * Package the emitted module imports `addCollection` from.
    *
-   * The default is the Vue binding because that is what the originating app
-   * uses, but the icon data is framework-neutral: `@iconify/react`,
+   * The default is the Vue binding, but the icon data is framework-neutral:
+   * `@iconify/react`,
    * `@iconify/svelte` and `iconify-icon` export the same function with the
    * same signature. Whichever one is named here has to be installed by the
    * consumer — this package only writes the specifier into the module, it never
@@ -55,10 +55,9 @@ const escapeRegExp = (value: string): string =>
  *
  * The scan is a plain search over the whole text — all three JavaScript string
  * delimiters, no parse — which means it reads names out of comments too. That
- * is deliberate and documented in the originating app's ADR-0001: an icon name
- * written into prose under the scanned directory sends the build looking for an
- * icon that does not exist, and the loud failure is preferred to a silently
- * missing icon.
+ * is deliberate, and ADR-0001 records why: an icon name written into prose under
+ * the scanned directory sends the build looking for an icon that does not exist,
+ * and that loud failure is preferred to a silently missing icon.
  */
 export function collectIconNames(
   code: string,

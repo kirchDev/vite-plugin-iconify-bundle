@@ -46,7 +46,7 @@ import 'virtual:iconify-bundle';
 ```
 
 > [!TIP]
-> [`examples/web-component`](examples/web-component) is the whole thing working: a plain Vite app, no framework, icons via `<iconify-icon>`. It is a workspace package linked to this repo rather than to a published version, so it builds against the working tree. `pnpm example:build`, or `pnpm example:dev` for the dev server.
+> Two runnable examples, both workspace packages linked to this repo rather than to a published version, so they build against the working tree: [`examples/vue`](examples/vue) uses the default `@iconify/vue` runtime and scans `.vue` files, [`examples/web-component`](examples/web-component) uses `iconify-icon` and no framework at all. `pnpm examples:build` builds both; `pnpm --filter @example/vue dev` starts one.
 
 ## ✨ Features
 
@@ -67,7 +67,7 @@ import 'virtual:iconify-bundle';
 | `runtime`     | `'@iconify/vue'`                   | Package the emitted module imports `addCollection` from.                                                |
 
 > [!IMPORTANT]
-> `collections` defaults to the two collections this plugin was extracted from. A prefix that isn't in the list never reaches the scan, so its icons render as nothing rather than failing — set it to your own collections. The plugin warns when a scan finds no icons at all, which is what that mistake usually looks like.
+> `collections` has a default, and it is almost certainly not yours. A prefix that isn't in the list never reaches the scan, so its icons render as nothing rather than failing — set it to your own collections. The plugin warns when a scan finds no icons at all, which is what that mistake usually looks like.
 
 The icon data is framework-neutral, so `runtime` covers React, Svelte and the web component too — `@iconify/react`, `@iconify/svelte` and `iconify-icon` all export the same `addCollection`. This package never imports the runtime itself; it only writes the specifier into the virtual module, so whichever one you name is yours to install.
 
