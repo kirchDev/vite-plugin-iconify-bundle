@@ -182,6 +182,7 @@ describe('iconifyBundlePlugin', () => {
   const RESOLVED_ID = '\0virtual:iconify-bundle';
 
   const warnings: string[] = [];
+  const watched: string[] = [];
 
   async function load(
     options: Parameters<typeof iconifyBundlePlugin>[0],
@@ -189,7 +190,9 @@ describe('iconifyBundlePlugin', () => {
   ): Promise<string> {
     const plugin = iconifyBundlePlugin(options);
     const context = {
-      addWatchFile() {},
+      addWatchFile(file: string) {
+        watched.push(file);
+      },
       warn(message: string) {
         warnings.push(message);
       }
@@ -205,6 +208,7 @@ describe('iconifyBundlePlugin', () => {
 
   beforeEach(async () => {
     warnings.length = 0;
+    watched.length = 0;
     dir = await fs.mkdtemp(path.join(tmpdir(), 'iconify-bundle-'));
   });
 
@@ -297,5 +301,153 @@ describe('iconifyBundlePlugin', () => {
     expect(code).not.toContain('addCollection(');
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toContain('No icon literals found');
+  });
+
+  it('scans a nested directory', async () => {
+    const nested = path.join(dir, 'components', 'base');
+    await fs.mkdir(nested, { recursive: true });
+    await fs.writeFile(path.join(nested, 'a.ts'), `const i = 'lucide:house';`);
+
+    expect(await loadModule(dir)).toContain('"house"');
+  });
+
+  /**
+   * Nothing else would report a `sourceDir` that does not exist: with no files
+   * to read the scan finds nothing, which is indistinguishable from a project
+   * that uses no icons yet. Failing is the only way the mistake is visible.
+   */
+  it('fails when the source directory does not exist', async () => {
+    await expect(loadModule(path.join(dir, 'nope'))).rejects.toThrow();
+  });
+
+  /**
+   * A build that emits the same icons in a different order produces a
+   * different chunk hash, which is the determinism the plugin is built for.
+   */
+  it('emits the icon names in a stable order', async () => {
+    await fs.writeFile(
+      path.join(dir, 'a.ts'),
+      `['lucide:mail', 'lucide:house', 'lucide:bell']`
+    );
+
+    const code = await loadModule(dir);
+    const order = [...code.matchAll(/"(bell|house|mail)":\{/g)].map(
+      ([, name]) => name
+    );
+
+    expect(order).toEqual(['bell', 'house', 'mail']);
+  });
+
+  it('emits one registration per collection', async () => {
+    await fs.writeFile(
+      path.join(dir, 'a.ts'),
+      `['lucide:house', 'simple-icons:vuedotjs']`
+    );
+
+    const code = await load({
+      sourceDir: dir,
+      collections: ['lucide', 'simple-icons']
+    });
+
+    expect(code.match(/addCollection\(/g)).toHaveLength(2);
+    expect(code).toContain('"prefix":"lucide"');
+    expect(code).toContain('"prefix":"simple-icons"');
+  });
+
+  /**
+   * Reporting only the first unknown name turns one build into a queue of
+   * builds, each revealing the next typo.
+   */
+  it('names every unknown icon, not just the first', async () => {
+    await fs.writeFile(
+      path.join(dir, 'a.ts'),
+      `['lucide:nope-one', 'lucide:nope-two', 'lucide:house']`
+    );
+
+    await expect(loadModule(dir)).rejects.toThrow(
+      /lucide:nope-one.*lucide:nope-two/
+    );
+  });
+
+  /**
+   * Without this the module is built once and never again: a newly written
+   * icon name would need a restart, which is the promise `handleHotUpdate`
+   * below completes.
+   */
+  it('registers every scanned file as a watch dependency', async () => {
+    await fs.writeFile(path.join(dir, 'a.ts'), `const i = 'lucide:house';`);
+    await fs.writeFile(path.join(dir, 'b.vue'), `const i = 'lucide:mail';`);
+
+    await loadModule(dir);
+
+    expect(watched.map((file) => path.basename(file)).sort()).toEqual([
+      'a.ts',
+      'b.vue'
+    ]);
+  });
+});
+
+/**
+ * The hooks Vite calls. Nothing above reaches them: `load` is exercised
+ * through the resolved id directly, so a `resolveId` that stopped claiming
+ * the virtual id would leave every test here green and every consumer broken.
+ */
+describe('iconifyBundlePlugin hooks', () => {
+  const RESOLVED_ID = '\0virtual:iconify-bundle';
+  const plugin = iconifyBundlePlugin();
+
+  it('claims the virtual module id', () => {
+    expect((plugin.resolveId as any).call(null, 'virtual:iconify-bundle')).toBe(
+      RESOLVED_ID
+    );
+  });
+
+  it('claims nothing else', () => {
+    expect((plugin.resolveId as any).call(null, 'vue')).toBeUndefined();
+    expect(
+      (plugin.resolveId as any).call(null, 'virtual:iconify-bundle-other')
+    ).toBeUndefined();
+  });
+
+  it('loads nothing for a module it does not own', async () => {
+    expect(await (plugin.load as any).call(null, 'vue')).toBeUndefined();
+  });
+
+  // `null` says the module graph has never seen the bundle. It cannot be
+  // `undefined` — that is what a default parameter fills in, so the absent
+  // case would silently become the present one.
+  function hotUpdate(file: string, module: unknown = { id: RESOLVED_ID }) {
+    const invalidated: unknown[] = [];
+    const server = {
+      moduleGraph: {
+        getModuleById: (id: string) =>
+          id === RESOLVED_ID && module !== null ? module : undefined,
+        invalidateModule: (m: unknown) => invalidated.push(m)
+      }
+    };
+    const result = (plugin.handleHotUpdate as any).call(null, { file, server });
+    return { result, invalidated };
+  }
+
+  it('invalidates the bundle when a scanned file changes', () => {
+    const { result, invalidated } = hotUpdate('/src/Icon.vue');
+
+    expect(invalidated).toHaveLength(1);
+    expect(result).toEqual([{ id: RESOLVED_ID }]);
+  });
+
+  it('ignores a file the scan does not read', () => {
+    for (const file of ['/src/styles.css', '/src/types.d.ts']) {
+      const { result, invalidated } = hotUpdate(file);
+      expect(invalidated).toHaveLength(0);
+      expect(result).toBeUndefined();
+    }
+  });
+
+  it('does nothing when the bundle was never loaded', () => {
+    const { result, invalidated } = hotUpdate('/src/Icon.vue', null);
+
+    expect(invalidated).toHaveLength(0);
+    expect(result).toBeUndefined();
   });
 });
