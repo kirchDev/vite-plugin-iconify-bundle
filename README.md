@@ -21,6 +21,18 @@ That's it. One bare side-effect import registers every icon the plugin found in 
 
 `@iconify/vue` fetches icon data from the Iconify API at runtime, which fails offline, renders nothing during SSR, and makes a build non-deterministic. Shipping whole `@iconify-json/*` collections instead trades that for megabytes of unused icons. This plugin scans your source for quoted `prefix:name` literals, resolves each one against the collections you have installed, and emits just those — a bundle that contains exactly the icons you wrote down.
 
+## ⚖️ Alternatives
+
+This is not the only way to bundle Iconify icons, and for some projects it is the wrong one. Check this before wiring it up:
+
+| Instead of this | When it fits better |
+| :-------------- | :------------------- |
+| [Iconify's own bundle script](https://iconify.design/docs/libraries/tools/export/icon-package.html) — a Node script using `@iconify/utils` or `@iconify/tools` that writes a file of `addCollection` calls | You are not on Vite, you need your own SVG in the bundle, you want the icon data transformed, or your icon names are built at runtime. The list is explicit, so it sees everything. |
+| [`@nuxt/icon`](https://github.com/nuxt/icon) with `clientBundle.scan` | You are on Nuxt. It already does this — same scan, same virtual module, same SSR — and falls back to the runtime API for a collection you have not installed, where this plugin fails the build. |
+| [`unplugin-icons`](https://github.com/unplugin/unplugin-icons) | You import each icon as its own component (`~icons/lucide/house`). It cannot resolve a name that arrives as a string from your data, which is the case this plugin is built for. |
+
+What this plugin gives up for the scan: names assembled at runtime, custom SVG, bundlers other than Vite, and any transformation of the icon data. What it removes is the hand-maintained list and the build step you have to remember.
+
 ## 📦 Install & run
 
 Install one `@iconify-json/<prefix>` package per collection you want scanned; the plugin reads their data from disk at build time.
