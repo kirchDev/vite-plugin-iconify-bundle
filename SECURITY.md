@@ -2,7 +2,7 @@
 
 ## Scope
 
-`vite-plugin-iconify-bundle` is a **build-time Vite plugin**. It runs on a developer's or a CI runner's machine: it reads source files under the configured `sourceDir`, reads icon data from the locally installed `@iconify-json/*` packages, and emits a virtual module into the bundle. It has no runtime component and makes no network requests.
+`@kirchdev/vite-plugin-iconify-bundle` is a **build-time Vite plugin**. It runs on a developer's or a CI runner's machine: it reads source files under the configured `sourceDir`, reads icon data from the locally installed `@iconify-json/*` packages, and emits a virtual module into the bundle. It has no runtime component and makes no network requests.
 
 The supported version is always the **latest release**. There are no maintained release branches to back-port fixes to; upgrade to the current version.
 

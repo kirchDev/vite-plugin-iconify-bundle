@@ -72,7 +72,7 @@ importers:
       '@iconify/vue':
         specifier: ^5.0.1
         version: 5.0.1(vue@3.5.42(typescript@7.0.2))
-      vite-plugin-iconify-bundle:
+      '@kirchdev/vite-plugin-iconify-bundle':
         specifier: workspace:*
         version: link:../..
       vue:
@@ -91,12 +91,12 @@ importers:
       '@iconify-json/lucide':
         specifier: ^1.2.126
         version: 1.2.126
+      '@kirchdev/vite-plugin-iconify-bundle':
+        specifier: workspace:*
+        version: link:../..
       iconify-icon:
         specifier: ^3.0.0
         version: 3.0.2
-      vite-plugin-iconify-bundle:
-        specifier: workspace:*
-        version: link:../..
     devDependencies:
       vite:
         specifier: ^7.3.6

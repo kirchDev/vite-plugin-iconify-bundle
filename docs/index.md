@@ -1,9 +1,9 @@
 ---
-title: 'vite-plugin-iconify-bundle documentation'
+title: '@kirchdev/vite-plugin-iconify-bundle documentation'
 description: 'Why the plugin is shaped the way it is, and what its scan does and does not see.'
 ---
 
-# vite-plugin-iconify-bundle
+# @kirchdev/vite-plugin-iconify-bundle
 
 A Vite plugin that bundles only the Iconify icons a codebase actually names. These pages hold what the code and the README cannot: the model behind the scan, and the reasoning behind the decisions that shaped it.
 
