@@ -1,32 +1,28 @@
 {
   "$schema": "https://www.schemastore.org/package.json",
-  "name": "scaffold",
-  "version": "0.3.0",
-  "description": "Language-agnostic baseline template for new kirchDev repositories.",
+  "name": "vite-plugin-iconify-bundle",
+  "version": "0.0.0",
+  "description": "Vite plugin that bundles only the Iconify icons your source actually uses — no runtime API calls, no whole collections.",
   "keywords": [
-    "commitlint",
-    "conventional-commits",
-    "dependabot",
-    "github-template",
-    "husky",
+    "bundle",
+    "iconify",
+    "icons",
     "kirchdev",
-    "nodejs",
-    "oxfmt",
-    "oxlint",
-    "pnpm",
-    "release-please",
-    "scaffold",
-    "template"
+    "ssr",
+    "tree-shaking",
+    "virtual-module",
+    "vite",
+    "vite-plugin"
   ],
-  "homepage": "https://github.com/TitusKirch/scaffold#readme",
+  "homepage": "https://github.com/kirchDev/vite-plugin-iconify-bundle#readme",
   "bugs": {
-    "url": "https://github.com/TitusKirch/scaffold/issues"
+    "url": "https://github.com/kirchDev/vite-plugin-iconify-bundle/issues"
   },
   "license": "MIT",
   "author": "Titus Kirch <titus.kirch@kirch.dev>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TitusKirch/scaffold.git"
+    "url": "git+https://github.com/kirchDev/vite-plugin-iconify-bundle.git"
   },
   "type": "module",
   "scripts": {

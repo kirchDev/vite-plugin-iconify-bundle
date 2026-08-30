@@ -2,28 +2,28 @@
 
 ## Scope
 
-`scaffold` is a **template repository** — it contains configuration files, GitHub workflows, and meta documents that are copied into new repositories. It is not a runtime package and has no users in the traditional sense.
+`vite-plugin-iconify-bundle` is a **build-time Vite plugin**. It runs on a developer's or a CI runner's machine: it reads source files under the configured `sourceDir`, reads icon data from the locally installed `@iconify-json/*` packages, and emits a virtual module into the bundle. It has no runtime component and makes no network requests.
 
-The supported "version" is always the **tip of `main`**. There are no historical branches to back-port fixes to; downstream repositories should re-pull the relevant file(s) from `main` if a vulnerability is discovered in the shipped templates.
+The supported version is always the **latest release**. There are no maintained release branches to back-port fixes to; upgrade to the current version.
 
 ## Reporting a Vulnerability
 
 **Please do not file a public GitHub issue for security problems.**
 
-In the context of this template, a "vulnerability" typically means:
+In the context of this plugin, a "vulnerability" typically means:
 
-- An insecure default in a shipped workflow (e.g. overly broad `permissions`).
-- A misconfigured Action that could leak secrets.
+- Source content reaching the emitted module unescaped, so a scanned file can inject code into the bundle.
+- A path handling flaw that lets the scan read outside the configured `sourceDir`.
 - A dependency in `package.json` that introduces a known CVE.
 
 Use one of the following private channels:
 
-1. **GitHub Private Vulnerability Reporting** (preferred): open a private advisory at <https://github.com/TitusKirch/scaffold/security/advisories/new>.
+1. **GitHub Private Vulnerability Reporting** (preferred): open a private advisory at <https://github.com/kirchDev/vite-plugin-iconify-bundle/security/advisories/new>.
 2. **Email**: [titus.kirch@kirch.dev](mailto:titus.kirch@kirch.dev). PGP available on request.
 
 Please include:
 
-- A description of the vulnerability and its impact on downstream repositories.
+- A description of the vulnerability and its impact on consuming projects.
 - Steps to reproduce.
 - Any suggested fix, if you have one.
 
