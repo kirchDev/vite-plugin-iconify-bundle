@@ -1,3 +1,10 @@
+# The published package is the repo root; `examples/*` are private workspace
+# packages that consume it via `workspace:*`. That link is the point: an example
+# wired to a published version would keep building after a change to this repo
+# broke it.
+packages:
+  - 'examples/*'
+
 # pnpm settings. Moved here from .npmrc: pnpm 10+ reads only auth/registry
 # settings from .npmrc — every other setting must live in this file.
 
