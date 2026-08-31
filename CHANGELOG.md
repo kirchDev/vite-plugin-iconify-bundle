@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/kirchDev/vite-plugin-iconify-bundle/compare/v0.2.0...v0.3.0) (2026-08-31)
+
+
+### Features
+
+* support Vite 8 ([#8](https://github.com/kirchDev/vite-plugin-iconify-bundle/issues/8)) ([ec1c4dd](https://github.com/kirchDev/vite-plugin-iconify-bundle/commit/ec1c4dd8c69056271b0de6d4f25629c5b498e484))
+
 ## [0.2.0](https://github.com/kirchDev/vite-plugin-iconify-bundle/compare/v0.1.0...v0.2.0) (2026-08-31)
 
 
