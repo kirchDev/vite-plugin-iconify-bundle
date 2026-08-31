@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.schemastore.org/package.json",
   "name": "@kirchdev/vite-plugin-iconify-bundle",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Vite plugin that bundles only the Iconify icons your source actually uses — no runtime API calls, no whole collections.",
   "keywords": [
     "bundle",
