@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/kirchDev/vite-plugin-iconify-bundle/compare/v0.1.0...v0.2.0) (2026-08-31)
+
+
+### Miscellaneous Chores
+
+* release 0.2.0 ([cf676a2](https://github.com/kirchDev/vite-plugin-iconify-bundle/commit/cf676a2ccfc8d57bcf8ced488c5d3c388ff3ad83))
+
 ## 0.1.0 (2026-08-30)
 
 
