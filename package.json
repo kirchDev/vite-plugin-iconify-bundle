@@ -76,10 +76,10 @@
     "@types/node": "^26.3.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
-    "oxfmt": "0.61.0",
-    "oxlint": "1.76.0",
+    "oxfmt": "0.71.0",
+    "oxlint": "1.86.0",
     "taze": "^19.16.0",
-    "tsdown": "^0.22.14",
+    "tsdown": "^0.23.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.0",
     "vitest": "^4.1.11"
