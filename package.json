@@ -66,23 +66,23 @@
   },
   "dependencies": {
     "@iconify/types": "^2.0.0",
-    "@iconify/utils": "^3.1.4"
+    "@iconify/utils": "^3.1.7"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.1",
-    "@commitlint/config-conventional": "^21.2.0",
-    "@iconify-json/lucide": "^1.2.126",
-    "@iconify-json/simple-icons": "^1.2.93",
-    "@types/node": "^26.3.0",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "@iconify-json/lucide": "^1.2.142",
+    "@iconify-json/simple-icons": "^1.2.99",
+    "@types/node": "^26.6.5",
     "husky": "^9.1.7",
-    "lint-staged": "^17.3.0",
-    "oxfmt": "0.61.0",
-    "oxlint": "1.76.0",
-    "taze": "^19.16.0",
-    "tsdown": "^0.22.14",
+    "lint-staged": "^17.6.0",
+    "oxfmt": "0.72.0",
+    "oxlint": "1.87.0",
+    "taze": "^21.3.0",
+    "tsdown": "^0.23.0",
     "typescript": "^7.0.2",
-    "vite": "^8.2.0",
-    "vitest": "^4.1.11"
+    "vite": "^8.3.4",
+    "vitest": "^5.0.3"
   },
   "peerDependencies": {
     "@iconify/vue": "*",
@@ -96,5 +96,5 @@
   "engines": {
     "node": ">=24"
   },
-  "packageManager": "pnpm@12.3.4"
+  "packageManager": "pnpm@12.11.2"
 }
