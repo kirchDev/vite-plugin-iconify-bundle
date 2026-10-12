@@ -170,7 +170,7 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
       '@iconify/utils':
-        specifier: ^3.1.4
+        specifier: ^3.1.7
         version: 3.1.7
       '@iconify/vue':
         specifier: '*'
