@@ -18,7 +18,7 @@
 import 'virtual:iconify-bundle';
 ```
 
-That's it. One bare side-effect import registers every icon the plugin found in your source, so icons work offline, render inline under SSR, and never cost a runtime request.
+That's it. One bare side-effect import registers every icon the plugin found in your source.
 
 ## 🤔 Why
 
@@ -26,7 +26,7 @@ That's it. One bare side-effect import registers every icon the plugin found in 
 
 ## ⚖️ Alternatives
 
-This is not the only way to bundle Iconify icons, and for some projects it is the wrong one. Check this before wiring it up:
+For some projects another tool fits better — check before wiring this one up:
 
 | Instead of this | When it fits better |
 | :-------------- | :------------------- |
