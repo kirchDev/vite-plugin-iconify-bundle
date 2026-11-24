@@ -6,7 +6,7 @@
 
 [![npm Version](https://img.shields.io/npm/v/@kirchdev/vite-plugin-iconify-bundle.svg?style=flat-square&color=4f46e5)](https://www.npmjs.com/package/@kirchdev/vite-plugin-iconify-bundle)
 [![Downloads](https://img.shields.io/npm/dm/@kirchdev/vite-plugin-iconify-bundle.svg?style=flat-square&color=4f46e5)](https://www.npmjs.com/package/@kirchdev/vite-plugin-iconify-bundle)
-[![Tests](https://img.shields.io/github/actions/workflow/status/kirchDev/vite-plugin-iconify-bundle/ci.yml?branch=main&style=flat-square&label=tests)](https://github.com/kirchDev/vite-plugin-iconify-bundle/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/kirchDev/vite-plugin-iconify-bundle/ci.yml?branch=dev&style=flat-square&label=tests)](https://github.com/kirchDev/vite-plugin-iconify-bundle/actions/workflows/ci.yml)
 [![Node Version](https://img.shields.io/node/v/@kirchdev/vite-plugin-iconify-bundle.svg?style=flat-square&color=8993be)](https://www.npmjs.com/package/@kirchdev/vite-plugin-iconify-bundle)
 [![License: MIT](https://img.shields.io/npm/l/@kirchdev/vite-plugin-iconify-bundle.svg?style=flat-square&color=10b981)](LICENSE)
 
