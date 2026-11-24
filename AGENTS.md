@@ -1,18 +1,4 @@
-# CLAUDE.md
-
-This file provides guidance to AI coding agents — Claude Code (claude.ai/code) and vendor-neutral tools such as Codex, OpenCode, Cursor, and Copilot — when working with code in this repository.
-
-## Agent instruction files
-
-`CLAUDE.md` and `AGENTS.md` are kept **byte-identical**. `CLAUDE.md` is what Claude Code reads; `AGENTS.md` is what vendor-neutral agent tools read — Codex, OpenCode, Cursor, Copilot, and whatever follows them. Two real files, deliberately not a symlink: not every tool resolves one.
-
-**After editing either file, copy it over the other — don't repeat the edit by hand:**
-
-```bash
-cp CLAUDE.md AGENTS.md   # or the reverse, whichever you just edited
-```
-
-Retyping a change is exactly how the two drift; one reflowed line or reworded clause is enough. `diff CLAUDE.md AGENTS.md` must print nothing. If it ever does, treat it as a defect and fix it by letting one file win wholesale — never by merging them.
+# vite-plugin-iconify-bundle
 
 ## What this repo is
 
@@ -55,7 +41,7 @@ CI runs the same five steps as `pnpm check`, plus `pnpm examples:build`, on PR.
 - **`examples/*` are private workspace packages** consuming the root via `workspace:*`. That link is the point: an example pinned to a published version keeps building after a change here breaks it. They are not in the root `tsconfig.json` — an example imports the built `dist/`, so adding it would make `typecheck` depend on `build`. `examples:build` is the check that covers them, and it builds the plugin first for the same reason. The two are deliberately different: `vue` exercises the default runtime and `.vue` scanning, `web-component` a non-default runtime and no framework. A third earns its place only by covering a path neither does.
 - **`src/index.ts` is the whole plugin**, `src/index.spec.ts` the whole suite. `client.d.ts` sits at the package root because a consumer reaches it as `@kirchdev/vite-plugin-iconify-bundle/client`, mirroring `vite/client`. Built with `tsdown` to ESM only (`dist/index.mjs`); `dist/` is gitignored and rebuilt by `prepublishOnly`.
 - **oxc, not eslint/prettier.** Linting via `oxlint`, formatting via `oxfmt`. Configs live in `.oxlintrc.json` / `.oxfmtrc.json`. `oxlint` uses `unicorn` + `oxc` plugins; rules deliberately minimal.
-- **Husky hooks** (`.husky/pre-commit`, `.husky/commit-msg`) run `lint-staged` and `commitlint`. `lint-staged.config.js` excludes `README.md`, `CLAUDE.md`, and `AGENTS.md` (free-form prose) and `pnpm-lock.yaml`. `oxlint --fix --deny-warnings` then `oxfmt` on JS; `oxfmt` only on JSON/YAML/MD.
+- **Husky hooks** (`.husky/pre-commit`, `.husky/commit-msg`) run `lint-staged` and `commitlint`. `lint-staged.config.js` excludes `README.md` and `AGENTS.md` (free-form prose) and `pnpm-lock.yaml`. `oxlint --fix --deny-warnings` then `oxfmt` on JS; `oxfmt` only on JSON/YAML/MD.
 - **Conventional Commits enforced** via `@commitlint/config-conventional`. Don't `--no-verify` unless explicitly asked.
 - **release-please owns the version.** Files: `release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release-please.yml`. Config uses `release-type: node`, so the release PR bumps `package.json` itself — never edit `version` by hand. `include-v-in-tag: true`. `initial-version` pins the first release to `0.1.0` — the `0.0.0` manifest entry means "never released", and release-please would otherwise fall back to its own default of `1.0.0`. The repo starts at `0.0.0` with an empty `CHANGELOG.md`; the first conventional commit on `main` opens the initial release PR.
 - **`release-please.yml` also publishes to npm**, in two jobs after the release-please job, matching `envprism` and `forgemap` — the two other kirchDev packages on npm. `publish-release` runs when release-please actually cut a release, checks out the tag and publishes `--tag latest`; `publish-prerelease` runs on every other push to `main` and on every push to `dev`, stamping a `0.1.0-dev.<run>-<sha>` version onto a throwaway `dev` dist-tag. Both use `pnpm publish --provenance` with npm Trusted Publishing (OIDC) — no `NPM_TOKEN` exists in this repo. The trusted publisher is configured on the npm package, so the very first publish has to happen by hand before either job can work.
