@@ -42,9 +42,6 @@
     },
     "labels": {
       "exclude": ["stack:*", "autorelease:*", "dependencies"]
-    },
-    "github": {
-      "template": null
     }
   },
   "docs": {
