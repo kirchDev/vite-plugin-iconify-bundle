@@ -6,7 +6,7 @@
 
 [![npm Version](https://img.shields.io/npm/v/@kirchdev/vite-plugin-iconify-bundle.svg?style=flat-square&color=4f46e5)](https://www.npmjs.com/package/@kirchdev/vite-plugin-iconify-bundle)
 [![Downloads](https://img.shields.io/npm/dm/@kirchdev/vite-plugin-iconify-bundle.svg?style=flat-square&color=4f46e5)](https://www.npmjs.com/package/@kirchdev/vite-plugin-iconify-bundle)
-[![Tests](https://img.shields.io/github/actions/workflow/status/kirchDev/vite-plugin-iconify-bundle/ci.yml?branch=main&style=flat-square&label=tests)](https://github.com/kirchDev/vite-plugin-iconify-bundle/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/kirchDev/vite-plugin-iconify-bundle/ci.yml?branch=dev&style=flat-square&label=tests)](https://github.com/kirchDev/vite-plugin-iconify-bundle/actions/workflows/ci.yml)
 [![Node Version](https://img.shields.io/node/v/@kirchdev/vite-plugin-iconify-bundle.svg?style=flat-square&color=8993be)](https://www.npmjs.com/package/@kirchdev/vite-plugin-iconify-bundle)
 [![License: MIT](https://img.shields.io/npm/l/@kirchdev/vite-plugin-iconify-bundle.svg?style=flat-square&color=10b981)](LICENSE)
 
@@ -18,7 +18,7 @@
 import 'virtual:iconify-bundle';
 ```
 
-That's it. One bare side-effect import registers every icon the plugin found in your source, so icons work offline, render inline under SSR, and never cost a runtime request.
+That's it. One bare side-effect import registers every icon the plugin found in your source.
 
 ## 🤔 Why
 
@@ -26,7 +26,7 @@ That's it. One bare side-effect import registers every icon the plugin found in 
 
 ## ⚖️ Alternatives
 
-This is not the only way to bundle Iconify icons, and for some projects it is the wrong one. Check this before wiring it up:
+For some projects another tool fits better — check before wiring this one up:
 
 | Instead of this | When it fits better |
 | :-------------- | :------------------- |
@@ -69,7 +69,7 @@ import 'virtual:iconify-bundle';
 - **🔍 A scan, not a parse** — a plain search over all three string delimiters, so a name in a comment counts too. That is deliberate: a wrong name fails loudly instead of rendering nothing.
 - **⚠️ Unknown names fail the build** — an icon the installed collection does not have stops the build rather than shipping a gap.
 - **🧰 Five options, no more** — everything else is convention.
-- **☑️ HMR-aware** — editing a source file invalidates the virtual module, so a newly written icon name appears without a restart.
+- **☑️ HMR-aware** — when an edit, a new file or a deleted one changes the icon set, the dev server reloads the page; any other edit keeps its normal HMR.
 
 ## ⚙️ Configuration
 
@@ -100,7 +100,7 @@ PRs welcome. Conventional Commits required (enforced via commitlint). Husky runs
 
 ```bash
 pnpm test    # the suite
-pnpm check   # lint, format, typecheck, test, policy parity — the CI gate
+pnpm check   # lint, format, typecheck, test, policy parity, examples — the CI gate
 ```
 
 > [!TIP]

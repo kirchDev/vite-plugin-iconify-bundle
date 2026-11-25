@@ -8,11 +8,11 @@
     "dev": "vite"
   },
   "dependencies": {
-    "@iconify-json/lucide": "^1.2.142",
+    "@iconify-json/lucide": "^1.2.158",
     "@kirchdev/vite-plugin-iconify-bundle": "workspace:*",
-    "iconify-icon": "^3.0.3"
+    "iconify-icon": "^3.0.5"
   },
   "devDependencies": {
-    "vite": "^8.3.4"
+    "vite": "^8.3.8"
   }
 }

@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import type { IconifyIcon, IconifyJSON } from '@iconify/types';
 import { getIconData } from '@iconify/utils';
-import type { Plugin } from 'vite';
+import type { Plugin, ViteDevServer } from 'vite';
 
 const VIRTUAL_ID = 'virtual:iconify-bundle';
 const RESOLVED_ID = `\0${VIRTUAL_ID}`;
@@ -130,8 +130,15 @@ export function iconifyBundlePlugin(
   // under `node_modules` — which holds neither the source to scan nor the
   // consumer's `@iconify-json/*`, and under pnpm's isolated linker cannot even
   // see them.
+  let root = process.cwd();
   let sourceDir = path.resolve(options.sourceDir ?? '.');
   let resolveFromRoot = createRequire(import.meta.url);
+
+  // The bundle the browser has, or is about to get: what `load` last served,
+  // or what the last reload announced. A file event compares against it to
+  // tell whether the icon set actually moved. `undefined` before the first
+  // load and after a build that threw — either way the next one is news.
+  let served: string | undefined;
 
   const collectionCache = new Map<string, IconifyJSON>();
   const loadCollection = (prefix: string): IconifyJSON => {
@@ -186,7 +193,13 @@ export function iconifyBundlePlugin(
 
     const subsets: IconifyJSON[] = [];
     const missing: string[] = [];
-    for (const [prefix, names] of usedByPrefix) {
+    // In `collections` order, not the order the files happened to finish
+    // reading: the same source must emit the same bundle, byte for byte.
+    for (const prefix of collections) {
+      const names = usedByPrefix.get(prefix);
+      if (!names) {
+        continue;
+      }
       const collection = loadCollection(prefix);
       const icons: Record<string, IconifyIcon> = {};
       for (const name of [...names].sort()) {
@@ -226,9 +239,61 @@ export function iconifyBundlePlugin(
     return { code, files, warning };
   };
 
+  /** Whether `target` lies strictly below `dir`. */
+  const isBelow = (dir: string, target: string): boolean => {
+    const relative = path.relative(dir, target);
+    return (
+      relative !== '' &&
+      relative.split(path.sep)[0] !== '..' &&
+      !path.isAbsolute(relative)
+    );
+  };
+
+  /** Whether the scan reads `file` — the same three rules `collectSourceFiles` applies. */
+  const isInScan = (file: string): boolean => {
+    if (!isBelow(sourceDir, file) || !isScannedFile(file, extensions)) {
+      return false;
+    }
+    const dirs = path.relative(sourceDir, file).split(path.sep).slice(0, -1);
+    return !dirs.some((dir) => ignore.has(dir));
+  };
+
+  /**
+   * Rebuild after `file` changed, and reload the page only when the bundle
+   * would differ. An edit that leaves the icon set alone must cost nothing —
+   * in particular not the edited file's own HMR update. A build that throws
+   * (an unknown name) reloads too, so the error reaches the browser.
+   */
+  const refresh = async (
+    server: ViteDevServer,
+    file: string
+  ): Promise<boolean> => {
+    if (!isInScan(file)) {
+      return false;
+    }
+    const module = server.moduleGraph.getModuleById(RESOLVED_ID);
+    if (!module) {
+      return false;
+    }
+    let code: string | undefined;
+    try {
+      ({ code } = await buildModule());
+    } catch {
+      code = undefined;
+    }
+    if (code !== undefined && code === served) {
+      return false;
+    }
+    served = code;
+    server.moduleGraph.invalidateModule(module);
+    server.ws.send({ type: 'full-reload', path: '*' });
+    return true;
+  };
+
   return {
     name: 'iconify-bundle',
     configResolved(config) {
+      root = config.root;
       sourceDir = path.resolve(config.root, options.sourceDir ?? '.');
       resolveFromRoot = createRequire(path.join(config.root, 'package.json'));
     },
@@ -239,7 +304,9 @@ export function iconifyBundlePlugin(
       if (id !== RESOLVED_ID) {
         return undefined;
       }
+      served = undefined;
       const { code, files, warning } = await buildModule();
+      served = code;
       for (const file of files) {
         this.addWatchFile(file);
       }
@@ -248,16 +315,24 @@ export function iconifyBundlePlugin(
       }
       return code;
     },
-    handleHotUpdate({ file, server }) {
-      if (!isScannedFile(file, extensions)) {
-        return undefined;
+    configureServer(server) {
+      // Vite watches its root. A source directory outside it raises no event
+      // for a file created there unless it is watched explicitly.
+      if (sourceDir !== root && !isBelow(root, sourceDir)) {
+        server.watcher.add(sourceDir);
       }
-      const module = server.moduleGraph.getModuleById(RESOLVED_ID);
-      if (module) {
-        server.moduleGraph.invalidateModule(module);
-        return [module];
-      }
-      return undefined;
+      // From Vite 6 on, `handleHotUpdate` fires for an edit only. A created or
+      // deleted file changes the icon set just as well and reaches a plugin
+      // only here. Where Vite 5 reports it twice, the second call finds the
+      // bundle already announced and does nothing.
+      server.watcher.on('add', (file) => refresh(server, file));
+      server.watcher.on('unlink', (file) => refresh(server, file));
+    },
+    // A list returned here REPLACES the modules Vite was about to update, so
+    // returning one for an ordinary edit would swallow that file's own HMR.
+    // Only an icon-set change answers, and that change reloads the page.
+    async handleHotUpdate({ file, server }) {
+      return (await refresh(server, file)) ? [] : undefined;
     }
   };
 }
