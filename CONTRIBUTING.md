@@ -11,7 +11,7 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 
 ## Development setup
 
-Node **24+**, **pnpm 12**:
+Node **26** (`.nvmrc`; the package supports 24+), **pnpm 12**:
 
 ```bash
 git clone https://github.com/kirchDev/vite-plugin-iconify-bundle.git

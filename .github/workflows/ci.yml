@@ -23,3 +23,7 @@ jobs:
   check:
     name: CI
     uses: kirchDev/workflows/.github/workflows/_ci-check.yml@1d7a1746b99aa4e6c717d044f37ea98d3a8f6bfc # v0.18.0
+    with:
+      # Development runs on the current LTS (`.nvmrc`); `engines` keeps >=24 as
+      # the floor consumers may run, and the publish jobs still build under 24.
+      node-version: '26'

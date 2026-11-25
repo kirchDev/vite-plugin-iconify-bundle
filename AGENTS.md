@@ -25,7 +25,7 @@ CI (`.github/workflows/ci.yml`) runs the steps of `pnpm check` on every PR into 
 
 ## Conventions
 
-- **Node 24, pnpm 12** — pinned in `.nvmrc`, `engines` and `packageManager`. Don't loosen `minimumReleaseAge` or the isolated linker in `pnpm-workspace.yaml` without reason.
+- **Node 26 to develop, Node 24 as the floor, pnpm 12** — `.nvmrc` and `ci.yml` run 26, `engines` stays `>=24` (raising it is a breaking change), `packageManager` pins pnpm. Don't loosen `minimumReleaseAge` or the isolated linker in `pnpm-workspace.yaml` without reason.
 - **`src/index.ts` is the whole plugin, `src/index.spec.ts` the whole suite.** Built with `tsdown` to ESM only; `dist/` is gitignored.
 - **`examples/*`** are private workspace packages consuming the root via `workspace:*` — keep that link, never pin a published version. They stay out of the root `tsconfig.json` (they import the built `dist/`). `vue` covers the default runtime and `.vue` scanning, `web-component` a non-default runtime without a framework; a third example needs a path neither covers.
 - **oxc, not eslint/prettier**: `oxlint` and `oxfmt`, configured in `.oxlintrc.json` / `.oxfmtrc.json`. Hooks run `lint-staged` and `commitlint`; `README.md` and `AGENTS.md` are excluded from formatting.
