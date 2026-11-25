@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/kirchDev/vite-plugin-iconify-bundle/compare/v0.4.0...v0.4.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* emit the collections in the configured order ([a6a5abc](https://github.com/kirchDev/vite-plugin-iconify-bundle/commit/a6a5abc00b32a7bfa0f45e50c5fd9b9172c8a2f7))
+* keep HMR working and pick up created and deleted source files ([3e45e11](https://github.com/kirchDev/vite-plugin-iconify-bundle/commit/3e45e114443dce7af8340dc67ab7241ad4c4017a))
+
 ## [0.4.0](https://github.com/kirchDev/vite-plugin-iconify-bundle/compare/v0.3.1...v0.4.0) (2026-10-12)
 
 
