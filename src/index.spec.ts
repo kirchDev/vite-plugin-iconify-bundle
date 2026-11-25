@@ -407,6 +407,29 @@ describe('iconifyBundlePlugin', () => {
     expect(order).toEqual(['bell', 'house', 'mail']);
   });
 
+  /**
+   * The same holds one level up. Collections met in the order the files
+   * finished reading would vary between two builds of the same source — and
+   * in the dev server, a bundle that differs without changing reloads the
+   * page on an edit that should have kept its HMR.
+   */
+  it('emits the collections in the configured order', async () => {
+    await fs.writeFile(
+      path.join(dir, 'a.ts'),
+      `['lucide:house', 'simple-icons:vuedotjs']`
+    );
+
+    const code = await load({
+      sourceDir: dir,
+      collections: ['simple-icons', 'lucide']
+    });
+    const order = [...code.matchAll(/"prefix":"([a-z-]+)"/g)].map(
+      ([, prefix]) => prefix
+    );
+
+    expect(order).toEqual(['simple-icons', 'lucide']);
+  });
+
   it('emits one registration per collection, each holding only its own', async () => {
     await fs.writeFile(
       path.join(dir, 'a.ts'),

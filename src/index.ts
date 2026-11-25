@@ -186,7 +186,13 @@ export function iconifyBundlePlugin(
 
     const subsets: IconifyJSON[] = [];
     const missing: string[] = [];
-    for (const [prefix, names] of usedByPrefix) {
+    // In `collections` order, not the order the files happened to finish
+    // reading: the same source must emit the same bundle, byte for byte.
+    for (const prefix of collections) {
+      const names = usedByPrefix.get(prefix);
+      if (!names) {
+        continue;
+      }
       const collection = loadCollection(prefix);
       const icons: Record<string, IconifyIcon> = {};
       for (const name of [...names].sort()) {
