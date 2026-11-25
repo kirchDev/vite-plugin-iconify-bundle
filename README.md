@@ -69,7 +69,7 @@ import 'virtual:iconify-bundle';
 - **🔍 A scan, not a parse** — a plain search over all three string delimiters, so a name in a comment counts too. That is deliberate: a wrong name fails loudly instead of rendering nothing.
 - **⚠️ Unknown names fail the build** — an icon the installed collection does not have stops the build rather than shipping a gap.
 - **🧰 Five options, no more** — everything else is convention.
-- **☑️ HMR-aware** — editing a source file invalidates the virtual module, so a newly written icon name appears without a restart.
+- **☑️ HMR-aware** — when an edit, a new file or a deleted one changes the icon set, the dev server reloads the page; any other edit keeps its normal HMR.
 
 ## ⚙️ Configuration
 

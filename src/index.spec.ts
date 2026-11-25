@@ -540,42 +540,194 @@ describe('iconifyBundlePlugin hooks', () => {
   it('loads nothing for a module it does not own', async () => {
     expect(await (plugin.load as any).call(null, 'vue')).toBeUndefined();
   });
+});
 
-  // `null` says the module graph has never seen the bundle. It cannot be
-  // `undefined` — that is what a default parameter fills in, so the absent
-  // case would silently become the present one.
-  function hotUpdate(file: string, module: unknown = { id: RESOLVED_ID }) {
+/**
+ * The dev server. Two Vite facts decide the shape of this: a list returned
+ * from `handleHotUpdate` REPLACES the modules Vite was about to update, so a
+ * plugin that returns one for an ordinary edit swallows that file's own HMR —
+ * a Vue component stops updating at all. And `handleHotUpdate` fires for an
+ * edit only, never for a created or deleted file, so those arrive through the
+ * watcher or not at all. The tests below pin both, against a real scan.
+ */
+describe('iconifyBundlePlugin dev server', () => {
+  const RESOLVED_ID = '\0virtual:iconify-bundle';
+  const RELOAD = { type: 'full-reload', path: '*' };
+
+  let dir: string;
+
+  beforeEach(async () => {
+    dir = await fs.mkdtemp(path.join(tmpdir(), 'iconify-bundle-hmr-'));
+  });
+
+  afterEach(async () => {
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  /**
+   * A plugin wired to a stand-in dev server, the bundle loaded once unless
+   * `loaded` is false. The scan reads the real files under `sourceDir`; the
+   * root stays this repo, so `lucide` resolves from its own install.
+   */
+  async function devServer(sourceDir: string = dir, loaded = true) {
+    const plugin = iconifyBundlePlugin({ sourceDir, collections: ['lucide'] });
+    const listeners: Record<string, (file: string) => unknown> = {};
+    const watchedDirs: string[] = [];
+    const sent: unknown[] = [];
     const invalidated: unknown[] = [];
+    const module = { id: RESOLVED_ID };
     const server = {
+      watcher: {
+        add: (target: string) => watchedDirs.push(target),
+        on: (event: string, listener: (file: string) => unknown) => {
+          listeners[event] = listener;
+        }
+      },
       moduleGraph: {
         getModuleById: (id: string) =>
-          id === RESOLVED_ID && module !== null ? module : undefined,
+          id === RESOLVED_ID && loaded ? module : undefined,
         invalidateModule: (m: unknown) => invalidated.push(m)
+      },
+      ws: { send: (payload: unknown) => sent.push(payload) }
+    };
+    const context = { addWatchFile() {}, warn() {} };
+    (plugin.configResolved as any).call(context, { root: process.cwd() });
+    (plugin.configureServer as any).call(context, server);
+    if (loaded) {
+      await (plugin.load as any).call(context, RESOLVED_ID);
+    }
+    const ownUpdate = [{ id: 'the edited file' }];
+    return {
+      sent,
+      invalidated,
+      watchedDirs,
+      edit: (file: string) =>
+        (plugin.handleHotUpdate as any).call(context, {
+          file,
+          modules: ownUpdate,
+          server
+        }),
+      fileEvent: async (event: 'add' | 'unlink', file: string) => {
+        await listeners[event]?.(file);
       }
     };
-    const result = (plugin.handleHotUpdate as any).call(null, { file, server });
-    return { result, invalidated };
   }
 
-  it('invalidates the bundle when a scanned file changes', () => {
-    const { result, invalidated } = hotUpdate('/src/Icon.vue');
+  const write = (name: string, code: string) =>
+    fs.writeFile(path.join(dir, name), code);
 
-    expect(invalidated).toHaveLength(1);
-    expect(result).toEqual([{ id: RESOLVED_ID }]);
+  it('leaves an edit alone when the icon set does not change', async () => {
+    await write('a.ts', `const i = 'lucide:house';`);
+    const server = await devServer();
+
+    await write('a.ts', `const i = 'lucide:house'; // reworded`);
+
+    expect(await server.edit(path.join(dir, 'a.ts'))).toBeUndefined();
+    expect(server.sent).toEqual([]);
+    expect(server.invalidated).toEqual([]);
   });
 
-  it('ignores a file the scan does not read', () => {
-    for (const file of ['/src/styles.css', '/src/types.d.ts']) {
-      const { result, invalidated } = hotUpdate(file);
-      expect(invalidated).toHaveLength(0);
-      expect(result).toBeUndefined();
+  it('reloads the page when an edit changes the icon set', async () => {
+    await write('a.ts', `const i = 'lucide:house';`);
+    const server = await devServer();
+
+    await write('a.ts', `const i = ['lucide:house', 'lucide:mail'];`);
+
+    expect(await server.edit(path.join(dir, 'a.ts'))).toEqual([]);
+    expect(server.sent).toEqual([RELOAD]);
+    expect(server.invalidated).toHaveLength(1);
+  });
+
+  it('reloads when an edit introduces an unknown icon, so the error shows', async () => {
+    await write('a.ts', `const i = 'lucide:house';`);
+    const server = await devServer();
+
+    await write('a.ts', `const i = 'lucide:not-an-icon';`);
+
+    expect(await server.edit(path.join(dir, 'a.ts'))).toEqual([]);
+    expect(server.sent).toEqual([RELOAD]);
+  });
+
+  it('reloads when a new file brings a new icon', async () => {
+    await write('a.ts', `const i = 'lucide:house';`);
+    const server = await devServer();
+
+    await fs.mkdir(path.join(dir, 'nested'));
+    await write('nested/b.vue', `const i = 'lucide:mail';`);
+    await server.fileEvent('add', path.join(dir, 'nested', 'b.vue'));
+
+    expect(server.sent).toEqual([RELOAD]);
+    expect(server.invalidated).toHaveLength(1);
+  });
+
+  it('reloads when deleting a file drops its icon', async () => {
+    await write('a.ts', `const i = 'lucide:house';`);
+    await write('b.ts', `const i = 'lucide:mail';`);
+    const server = await devServer();
+
+    await fs.rm(path.join(dir, 'b.ts'));
+    await server.fileEvent('unlink', path.join(dir, 'b.ts'));
+
+    expect(server.sent).toEqual([RELOAD]);
+  });
+
+  // Vite 5 reports a created file through both paths. One change, one reload.
+  it('reloads once when the same change arrives twice', async () => {
+    await write('a.ts', `const i = 'lucide:house';`);
+    const server = await devServer();
+
+    await write('b.ts', `const i = 'lucide:mail';`);
+    await server.fileEvent('add', path.join(dir, 'b.ts'));
+    await server.edit(path.join(dir, 'b.ts'));
+
+    expect(server.sent).toEqual([RELOAD]);
+  });
+
+  it('does not reload for a new file that adds no icon', async () => {
+    await write('a.ts', `const i = 'lucide:house';`);
+    const server = await devServer();
+
+    await write('b.ts', `const i = 'lucide:house';`);
+    await server.fileEvent('add', path.join(dir, 'b.ts'));
+
+    expect(server.sent).toEqual([]);
+  });
+
+  it('ignores a file the scan does not read', async () => {
+    await write('a.ts', `const i = 'lucide:house';`);
+    const server = await devServer();
+
+    for (const file of [
+      path.join(dir, 'styles.css'),
+      path.join(dir, 'types.d.ts'),
+      path.join(dir, 'node_modules', 'pkg', 'index.ts'),
+      path.join(tmpdir(), 'outside-the-source-dir.ts')
+    ]) {
+      expect(await server.edit(file)).toBeUndefined();
+      await server.fileEvent('add', file);
     }
+    expect(server.sent).toEqual([]);
+    expect(server.invalidated).toEqual([]);
   });
 
-  it('does nothing when the bundle was never loaded', () => {
-    const { result, invalidated } = hotUpdate('/src/Icon.vue', null);
+  it('does nothing while the bundle was never loaded', async () => {
+    await write('a.ts', `const i = 'lucide:house';`);
+    const server = await devServer(dir, false);
 
-    expect(invalidated).toHaveLength(0);
-    expect(result).toBeUndefined();
+    await write('b.ts', `const i = 'lucide:mail';`);
+
+    expect(await server.edit(path.join(dir, 'a.ts'))).toBeUndefined();
+    await server.fileEvent('add', path.join(dir, 'b.ts'));
+    expect(server.sent).toEqual([]);
+  });
+
+  // Vite watches its root. A file created in a source directory outside it
+  // raises no event at all unless the directory is watched explicitly.
+  it('watches a source directory outside the root', async () => {
+    const outside = await devServer(dir);
+    const inside = await devServer(path.join(process.cwd(), 'src'), false);
+
+    expect(outside.watchedDirs).toEqual([dir]);
+    expect(inside.watchedDirs).toEqual([]);
   });
 });
