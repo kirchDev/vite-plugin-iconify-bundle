@@ -5,8 +5,6 @@ status: 'accepted'
 date: '2026-08-30'
 ---
 
-# ADR-0001 — Treat the source text as the definition of a used icon
-
 ## Context
 
 Resolving icons at build time is what makes them work offline, render inline under server-side rendering, and stay identical across builds. That requires knowing the set of icons before anything runs, so the set has to be derivable from the source rather than observed at runtime.
