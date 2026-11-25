@@ -19,7 +19,7 @@ cd vite-plugin-iconify-bundle
 pnpm install   # wires the husky hooks
 ```
 
-`pnpm check` is the gate CI runs; `pnpm check:fix` fixes lint and format. CI does not build the examples — run `pnpm examples:build` when a change can affect them.
+`pnpm check` is the gate CI runs, and it builds both examples too; `pnpm check:fix` fixes lint and format.
 
 ## Branching & PRs
 

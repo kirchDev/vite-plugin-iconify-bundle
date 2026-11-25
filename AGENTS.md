@@ -15,13 +15,13 @@ Two behaviours are deliberate. Both look like defects and have been proposed as 
 
 | Command               | What it does                                                 |
 | :-------------------- | :----------------------------------------------------------- |
-| `pnpm check`          | The gate: `lint` + `format` + `typecheck` + `test` + `check:policy` |
+| `pnpm check`          | The gate: `lint` + `format` + `typecheck` + `test` + `check:policy` + `examples:build` |
 | `pnpm check:fix`      | Auto-fix lint + format                                       |
 | `pnpm format`         | `oxfmt --check .` — the check, not the fix (`format:fix`)    |
 | `pnpm examples:build` | Build the plugin, then every example against it              |
 | `pnpm check:policy`   | Proves the two agent policy files ban the same commands      |
 
-CI (`.github/workflows/ci.yml`) runs the steps of `pnpm check` on every PR into `main` or `dev`. **It does not run `examples:build`** — run it yourself when a change can affect the examples.
+CI (`.github/workflows/ci.yml`) runs the steps of `pnpm check` on every PR into `main` or `dev`, splitting it on `&&` into bare `pnpm <task>` calls and expanding each recursively. **A step with arguments inside an aggregate is dropped** — keep every step of `check` a bare `pnpm <task>`, and give a step that needs arguments its own script with no `pnpm <task>` call in it (that is why `examples:build` calls `tsdown` directly).
 
 ## Conventions
 

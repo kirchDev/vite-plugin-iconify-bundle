@@ -100,7 +100,7 @@ PRs welcome. Conventional Commits required (enforced via commitlint). Husky runs
 
 ```bash
 pnpm test    # the suite
-pnpm check   # lint, format, typecheck, test, policy parity — the CI gate
+pnpm check   # lint, format, typecheck, test, policy parity, examples — the CI gate
 ```
 
 > [!TIP]
